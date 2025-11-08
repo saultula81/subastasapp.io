@@ -1,7 +1,8 @@
 // ====================================================================
-// Archivo: script.js (FRONT-END) - COMPLETO
+// Archivo: script.js (FRONT-END) - VERSIÓN FINAL CORREGIDA CORS
 // ====================================================================
 
+// ¡IMPORTANTE! REEMPLAZAR con su URL confirmada.
 const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzARTUvZwGtQIhr48uQPs_iZalsYkwYbZGkneRPRFSZkvP5PL4mlZ1s92sY2Cxjn8Oh/exec'; 
 
 // --------------------------------------------------------------------
@@ -12,7 +13,6 @@ async function handleBidSubmission(event) {
     const form = event.target;
     const formData = new FormData(form);
     
-    // Convertir FormData a objeto simple para enviar
     const data = { action: 'place_bid' };
     for (let [key, value] of formData.entries()) {
         data[key] = value;
@@ -23,24 +23,25 @@ async function handleBidSubmission(event) {
     submitButton.textContent = 'Enviando...';
 
     try {
-        const response = await fetch(APPSCRIPT_URL, {
+        // SOLUCIÓN CORS: Fetch en dos pasos para POST
+        const firstResponse = await fetch(APPSCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify(data), // Usar JSON para mayor compatibilidad
+            body: JSON.stringify(data), 
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
         });
 
-        // La respuesta del Apps Script viene como texto JSON
-        const result = await response.json(); 
+        const resultText = await firstResponse.text();
+        const result = JSON.parse(resultText); 
+        
         const messageContainer = form.parentElement.querySelector('.bid-message');
         
         if (result.status === 'Success') {
             messageContainer.style.color = 'green';
             messageContainer.textContent = result.message;
-            form.reset(); // Limpiar formulario
+            form.reset(); 
             
-            // Forzar actualización de la puja actual después del éxito
             const ID_Lote = form.querySelector('input[name="ID_Lote"]').value;
             fetchCurrentBid(ID_Lote); 
 
@@ -66,8 +67,10 @@ async function fetchCurrentBid(ID_Lote) {
     if (!bidDisplay) return;
 
     try {
-        const response = await fetch(`${APPSCRIPT_URL}?action=get_current_bid&ID_Lote=${ID_Lote}`);
-        const bidData = await response.json();
+        // SOLUCIÓN CORS: Fetch en dos pasos para GET
+        const firstResponse = await fetch(`${APPSCRIPT_URL}?action=get_current_bid&ID_Lote=${ID_Lote}`);
+        const jsonText = await firstResponse.text();
+        const bidData = JSON.parse(jsonText); 
         
         // El precio inicial se usa si la puja máxima es 0
         const initialPriceElement = document.getElementById(`initial-price-${ID_Lote}`);
@@ -81,7 +84,6 @@ async function fetchCurrentBid(ID_Lote) {
         // Actualizar el valor mínimo en el campo de puja
         const bidInput = document.querySelector(`#bid-form-${ID_Lote} input[name="Amount"]`);
         if (bidInput) {
-            // La nueva puja mínima debe ser 1 céntimo más que la actual.
             bidInput.min = (minimumBid + 0.01).toFixed(2);
             bidInput.placeholder = `Mínimo: $${(minimumBid + 0.01).toFixed(2)}`;
         }
@@ -100,8 +102,10 @@ async function displayLots() {
     container.innerHTML = '<p>Cargando lotes...</p>'; 
 
     try {
-        const response = await fetch(`${APPSCRIPT_URL}?action=get_lots`);
-        const lotsData = await response.json(); 
+        // SOLUCIÓN CORS: Fetch en dos pasos para GET
+        const firstResponse = await fetch(`${APPSCRIPT_URL}?action=get_lots`);
+        const jsonText = await firstResponse.text();
+        const lotsData = JSON.parse(jsonText); 
 
         container.innerHTML = '';
         
@@ -114,34 +118,39 @@ async function displayLots() {
             const lotElement = document.createElement('div');
             lotElement.className = 'auction-item';
             
-            lotElement.innerHTML = `
-                <img src="${lot.URL_Imagen}" alt="${lot.Nombre}" class="lot-image">
-                <h3>${lot.Nombre}</h3>
-                <p>${lot.Descripción}</p>
-                <p>Precio Inicial: <strong id="initial-price-${lot.ID_Lote}">${lot.Precio_Inicial.toFixed(2)}</strong></p>
-                
-                <div id="bid-display-${lot.ID_Lote}" style="margin-bottom: 10px;">
-                    Cargando puja actual...
-                </div>
+            // Aseguramos que el Precio_Inicial sea un número para toFixed
+            const initialPrice = parseFloat(lot.Precio_Inicial);
 
-                <form id="bid-form-${lot.ID_Lote}" class="bid-form">
-                    <input type="hidden" name="ID_Lote" value="${lot.ID_Lote}">
-                    <input type="number" name="Amount" placeholder="Monto de tu puja" required step="0.01">
-                    <input type="text" name="Bidder" placeholder="Tu nombre o alias" required>
-                    <button type="submit">PUJAR</button>
-                    <p class="bid-message" style="margin-top: 10px;"></p>
-                </form>
+            lotElement.innerHTML = `
+                <div class="card">
+                    <img src="${lot.URL_Imagen}" alt="${lot.Nombre}" class="lot-image">
+                    <h3>${lot.Nombre}</h3>
+                    <p>${lot.Descripción}</p>
+                    <p>Precio Inicial: <strong id="initial-price-${lot.ID_Lote}">${initialPrice.toFixed(2)}</strong></p>
+                    
+                    <div id="bid-display-${lot.ID_Lote}" style="margin-bottom: 10px;">
+                        Cargando puja actual...
+                    </div>
+
+                    <form id="bid-form-${lot.ID_Lote}" class="bid-form">
+                        <input type="hidden" name="ID_Lote" value="${lot.ID_Lote}">
+                        <input type="number" name="Amount" placeholder="Monto de tu puja" required step="0.01">
+                        <input type="text" name="Bidder" placeholder="Tu nombre o alias" required>
+                        <button type="submit">PUJAR</button>
+                        <p class="bid-message" style="margin-top: 10px;"></p>
+                    </form>
+                </div>
             `;
             container.appendChild(lotElement);
             
-            // 4. Adjuntar el manejador de envío y actualizar puja
+            // Adjuntar el manejador de envío y actualizar puja
             document.getElementById(`bid-form-${lot.ID_Lote}`).addEventListener('submit', handleBidSubmission);
             fetchCurrentBid(lot.ID_Lote);
         });
 
     } catch (error) {
         console.error("Error al cargar los lotes:", error);
-        container.innerHTML = '<p style="color: red;">Error al conectar con la base de datos.</p>';
+        container.innerHTML = '<p style="color: red;">Error al conectar con la base de datos. (Verifique el error CORS y la URL de Apps Script)</p>';
     }
 }
 
@@ -155,4 +164,4 @@ setInterval(() => {
         const ID_Lote = lotElement.querySelector('input[name="ID_Lote"]').value;
         fetchCurrentBid(ID_Lote);
     });
-}, 10000); // Actualiza cada 10 segundos para tiempo real
+}, 10000);
