@@ -1,12 +1,25 @@
 // ====================================================================
-// Archivo: script.js (FRONT-END) - VERSIÓN FINAL CORREGIDA CORS
+// Archivo: script.js (FRONT-END) - VERSIÓN FINAL CORS Iframe
 // ====================================================================
 
-// ¡IMPORTANTE! REEMPLAZAR con su URL confirmada.
+// ¡IMPORTANTE! Reemplace con su URL que TERMINA EN /exec
 const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxS4n0dukvXTN6vkQ1-ZC-oy285I5e94MMABDjoVOU3dwSIaDHJg1S6NUfVNeFiFsPN9Q/exec'; 
 
+// Función para inicializar el iframe y forzar la ejecución del script
+function initializeCORS() {
+    return new Promise(resolve => {
+        const iframe = document.getElementById('cors-iframe');
+        iframe.onload = function() {
+            // El script principal debe ser llamado después de que el iframe cargue
+            resolve();
+        };
+        // Carga la URL de Apps Script en el iframe una única vez
+        iframe.src = APPSCRIPT_URL;
+    });
+}
+
 // --------------------------------------------------------------------
-// 1. MANEJADOR DE ENVÍO DE PUJA (POST)
+// 1. MANEJADOR DE ENVÍO DE PUJA (POST) - Mismo código
 // --------------------------------------------------------------------
 async function handleBidSubmission(event) {
     event.preventDefault();
@@ -23,13 +36,11 @@ async function handleBidSubmission(event) {
     submitButton.textContent = 'Enviando...';
 
     try {
-        // SOLUCIÓN CORS: Fetch en dos pasos para POST
+        // Fetch en dos pasos para POST
         const firstResponse = await fetch(APPSCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify(data), 
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         });
 
         const resultText = await firstResponse.text();
@@ -52,7 +63,7 @@ async function handleBidSubmission(event) {
 
     } catch (error) {
         console.error("Error al enviar la puja:", error);
-        form.parentElement.querySelector('.bid-message').textContent = 'Error de conexión. Intente de nuevo.';
+        form.parentElement.querySelector('.bid-message').textContent = 'Error de conexión.';
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'PUJAR';
@@ -60,19 +71,18 @@ async function handleBidSubmission(event) {
 }
 
 // --------------------------------------------------------------------
-// 2. OBTENER Y MOSTRAR PUJA ACTUAL (GET)
+// 2. OBTENER Y MOSTRAR PUJA ACTUAL (GET) - Mismo código
 // --------------------------------------------------------------------
 async function fetchCurrentBid(ID_Lote) {
     const bidDisplay = document.getElementById(`bid-display-${ID_Lote}`);
     if (!bidDisplay) return;
 
     try {
-        // SOLUCIÓN CORS: Fetch en dos pasos para GET
+        // Fetch en dos pasos para GET
         const firstResponse = await fetch(`${APPSCRIPT_URL}?action=get_current_bid&ID_Lote=${ID_Lote}`);
         const jsonText = await firstResponse.text();
         const bidData = JSON.parse(jsonText); 
         
-        // El precio inicial se usa si la puja máxima es 0
         const initialPriceElement = document.getElementById(`initial-price-${ID_Lote}`);
         const minimumBid = bidData.maxBid > 0 ? bidData.maxBid : (initialPriceElement ? parseFloat(initialPriceElement.textContent) : 0);
 
@@ -81,7 +91,6 @@ async function fetchCurrentBid(ID_Lote) {
             Postor líder: ${bidData.bidder}
         `;
         
-        // Actualizar el valor mínimo en el campo de puja
         const bidInput = document.querySelector(`#bid-form-${ID_Lote} input[name="Amount"]`);
         if (bidInput) {
             bidInput.min = (minimumBid + 0.01).toFixed(2);
@@ -95,14 +104,14 @@ async function fetchCurrentBid(ID_Lote) {
 }
 
 // --------------------------------------------------------------------
-// 3. CARGAR Y MOSTRAR LOTES CON FORMULARIOS
+// 3. CARGAR Y MOSTRAR LOTES CON FORMULARIOS - Mismo código
 // --------------------------------------------------------------------
 async function displayLots() {
     const container = document.getElementById('lots-container');
     container.innerHTML = '<p>Cargando lotes...</p>'; 
 
     try {
-        // SOLUCIÓN CORS: Fetch en dos pasos para GET
+        // Fetch en dos pasos para GET
         const firstResponse = await fetch(`${APPSCRIPT_URL}?action=get_lots`);
         const jsonText = await firstResponse.text();
         const lotsData = JSON.parse(jsonText); 
@@ -118,7 +127,6 @@ async function displayLots() {
             const lotElement = document.createElement('div');
             lotElement.className = 'auction-item';
             
-            // Aseguramos que el Precio_Inicial sea un número para toFixed
             const initialPrice = parseFloat(lot.Precio_Inicial);
 
             lotElement.innerHTML = `
@@ -143,27 +151,30 @@ async function displayLots() {
             `;
             container.appendChild(lotElement);
             
-            // Adjuntar el manejador de envío y actualizar puja
             document.getElementById(`bid-form-${lot.ID_Lote}`).addEventListener('submit', handleBidSubmission);
             fetchCurrentBid(lot.ID_Lote);
         });
 
     } catch (error) {
         console.error("Error al cargar los lotes:", error);
-        container.innerHTML = '<p style="color: red;">Error al conectar con la base de datos. (Verifique el error CORS y la URL de Apps Script)</p>';
+        container.innerHTML = '<p style="color: red;">Error al conectar con la base de datos.</p>';
     }
 }
 
 
-// Iniciar la carga al cargar la página y actualizar pujas cada 10 segundos
-displayLots();
-setInterval(() => {
-    // Si hay lotes mostrados, actualiza sus pujas individualmente
-    const lots = document.querySelectorAll('.auction-item');
-    lots.forEach(lotElement => {
-        const ID_Lote = lotElement.querySelector('input[name="ID_Lote"]').value;
-        fetchCurrentBid(ID_Lote);
-    });
-}, 10000);
+// --------------------------------------------------------------------
+// INICIO DEL SCRIPT
+// --------------------------------------------------------------------
 
-
+// Iniciar la carga solo después de que el iframe haya forzado la redirección 302
+initializeCORS().then(() => {
+    displayLots();
+    // Actualiza pujas cada 10 segundos
+    setInterval(() => {
+        const lots = document.querySelectorAll('.auction-item');
+        lots.forEach(lotElement => {
+            const ID_Lote = lotElement.querySelector('input[name="ID_Lote"]').value;
+            fetchCurrentBid(ID_Lote);
+        });
+    }, 10000); 
+});
