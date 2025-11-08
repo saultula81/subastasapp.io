@@ -1,9 +1,9 @@
 // ====================================================================
-// Archivo: script.js (FRONT-END) - SOLUCIÓN FINAL CORS (userconent.com)
+// Archivo: script.js (FRONT-END) - SOLUCIÓN FINAL (Headers y /exec)
 // ====================================================================
 
-// URL ESPECIAL: Usa userconent.com y el ID de implementación para saltar el error 302/CORS
-const APPSCRIPT_URL = 'https://script.googleusercontent.com/macros/echo?user_content_request=true&lib=AKfycbxS4n0dukvXTN6vkQ1-ZC-oy285I5e94MMABDjoVOU3dwSIaDHJg1S6NUfVNeFiFsPN9Q'; 
+// ¡IMPORTANTE! Vuelva a usar su URL de Apps Script que termina en /exec
+const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxS4n0dukvXTN6vkQ1-ZC-oy285I5e94MMABDjoVOU3dwSIaDHJg1S6NUfVNeFiFsPN9Q/exec'; 
 
 // --------------------------------------------------------------------
 // 1. MANEJADOR DE ENVÍO DE PUJA (POST)
@@ -23,15 +23,17 @@ async function handleBidSubmission(event) {
     submitButton.textContent = 'Enviando...';
 
     try {
-        // Fetch en dos pasos (necesario cuando se usa userconent.com)
-        const firstResponse = await fetch(APPSCRIPT_URL, {
+        // SOLUCIÓN CORS POST: Usar un encabezado simple
+        const response = await fetch(APPSCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify(data), 
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest' // Esta línea ayuda a Google a omitir validaciones
+            },
         });
 
-        const resultText = await firstResponse.text();
-        const result = JSON.parse(resultText); 
+        const result = await response.json(); // Volvemos a leer JSON directamente
         
         const messageContainer = form.parentElement.querySelector('.bid-message');
         
@@ -65,10 +67,11 @@ async function fetchCurrentBid(ID_Lote) {
     if (!bidDisplay) return;
 
     try {
-        // Fetch en dos pasos para GET
-        const firstResponse = await fetch(`${APPSCRIPT_URL}&action=get_current_bid&ID_Lote=${ID_Lote}`);
-        const jsonText = await firstResponse.text();
-        const bidData = JSON.parse(jsonText); 
+        // SOLUCIÓN CORS GET: Usamos el encabezado para forzar JSON
+        const response = await fetch(`${APPSCRIPT_URL}?action=get_current_bid&ID_Lote=${ID_Lote}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const bidData = await response.json(); // Volvemos a leer JSON directamente
         
         const initialPriceElement = document.getElementById(`initial-price-${ID_Lote}`);
         const minimumBid = bidData.maxBid > 0 ? bidData.maxBid : (initialPriceElement ? parseFloat(initialPriceElement.textContent) : 0);
@@ -98,10 +101,11 @@ async function displayLots() {
     container.innerHTML = '<p>Cargando lotes...</p>'; 
 
     try {
-        // Fetch en dos pasos para GET
-        const firstResponse = await fetch(`${APPSCRIPT_URL}&action=get_lots`);
-        const jsonText = await firstResponse.text();
-        const lotsData = JSON.parse(jsonText); 
+        // SOLUCIÓN CORS GET: Usamos el encabezado para forzar JSON
+        const response = await fetch(`${APPSCRIPT_URL}?action=get_lots`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const lotsData = await response.json(); // Volvemos a leer JSON directamente
 
         container.innerHTML = '';
         
