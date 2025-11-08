@@ -3,7 +3,7 @@
 // ====================================================================
 
 // ¡IMPORTANTE! REEMPLAZAR con su URL confirmada.
-const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzARTUvZwGtQIhr48uQPs_iZalsYkwYbZGkneRPRFSZkvP5PL4mlZ1s92sY2Cxjn8Oh/exec'; 
+const APPSCRIPT_URL = 'https://script.google.com/macros/library/d/1U9eFSXJtcWBAThhY3rKBcrVLBO222QwlHnvaKJlBqhrval8Qxnz0hUTV/8'; 
 
 // --------------------------------------------------------------------
 // 1. MANEJADOR DE ENVÍO DE PUJA (POST)
@@ -165,3 +165,4 @@ setInterval(() => {
         fetchCurrentBid(ID_Lote);
     });
 }, 10000);
+
