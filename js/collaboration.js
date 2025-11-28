@@ -14,7 +14,7 @@ function initCollaboration() {
 }
 
 // Request auction publication
-async function requestAuctionPublication(title, description, imageUrl, price, duration, phone) {
+async function requestAuctionPublication(title, description, imageUrls, price, duration, phone) {
     try {
         const userId = authModule.getCurrentUserId();
         const userData = authModule.getCurrentUserData();
@@ -47,7 +47,9 @@ async function requestAuctionPublication(title, description, imageUrl, price, du
             userPhone: phone,
             title: title,
             description: description,
-            imageUrl: imageUrl,
+            imageUrls: imageUrls, // Store as array
+            imageUrl: imageUrls[0], // Keep primary image for backward compatibility
+            startingPrice: parseFloat(price),
             startingPrice: parseFloat(price),
             duration: parseInt(duration),
             status: 'pending',
@@ -143,15 +145,25 @@ async function loadAuctionRequests() {
 
         console.log('✅ Rendering', requestsArray.length, 'requests');
 
-        container.innerHTML = requestsArray.map(request => `
+        container.innerHTML = requestsArray.map(request => {
+            // Handle multiple images
+            const images = request.imageUrls || (request.imageUrl ? [request.imageUrl] : []);
+            const imagesHtml = images.map(url =>
+                `<img src="${url}" alt="Preview" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="window.open('${url}', '_blank')">`
+            ).join('');
+
+            return `
       <div class="profile-card" style="margin-bottom: 1rem;">
         <h4>${utils.sanitizeInput(request.title)}</h4>
         <p><strong>Usuario:</strong> ${utils.sanitizeInput(request.userName)}</p>
         <p><strong>Teléfono:</strong> ${utils.sanitizeInput(request.userPhone)}</p>
-        <p><strong>Precio:</strong> $${request.startingPrice}</p>
+        <p><strong>Precio:</strong> ${utils.formatCurrency(request.startingPrice)}</p>
         <p><strong>Descripción:</strong> ${utils.sanitizeInput(request.description)}</p>
         <div style="margin: 10px 0;">
-            <img src="${request.imageUrl}" alt="Preview" style="max-width: 100px; border-radius: 5px;">
+            <p style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Imágenes (${images.length}):</strong></p>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                ${imagesHtml}
+            </div>
         </div>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
           <button class="btn btn-primary" onclick="approveAuctionRequest('${request.id}')">
@@ -162,7 +174,7 @@ async function loadAuctionRequests() {
           </button>
         </div>
       </div>
-    `).join('');
+    `}).join('');
 
         console.log('✅ Requests rendered successfully');
     } catch (error) {
@@ -187,7 +199,8 @@ async function approveAuctionRequest(requestId) {
         const auctionData = {
             title: request.title,
             description: request.description,
-            imageUrl: request.imageUrl,
+            imageUrls: request.imageUrls || (request.imageUrl ? [request.imageUrl] : []),
+            imageUrl: request.imageUrl || (request.imageUrls ? request.imageUrls[0] : ''), // Primary image
             startingPrice: request.startingPrice,
             currentPrice: request.startingPrice,
             duration: request.duration,
@@ -328,21 +341,22 @@ function setupCollaborationListeners() {
             const duration = document.getElementById('request-duration').value;
             const phone = document.getElementById('request-phone').value;
 
-            // Get image URL from upload module or input
-            let imageUrl = '';
+            // Get image URLs from upload module or input
+            let imageUrls = [];
             if (window.imageUploadModule) {
-                imageUrl = await window.imageUploadModule.getImageUrl('modal-request-auction');
+                imageUrls = await window.imageUploadModule.getImageUrls('modal-request-auction');
             } else {
-                imageUrl = document.getElementById('request-image').value;
+                const url = document.getElementById('request-image').value;
+                if (url) imageUrls = [url];
             }
 
-            if (!imageUrl) {
-                utils.showToast('Por favor agrega una imagen', 'error');
+            if (!imageUrls || imageUrls.length === 0) {
+                // Toast is already shown by getImageUrls if validation fails
                 return;
             }
 
             // Create auction request
-            requestAuctionPublication(title, description, imageUrl, price, duration, phone);
+            requestAuctionPublication(title, description, imageUrls, price, duration, phone);
         });
     }
 }

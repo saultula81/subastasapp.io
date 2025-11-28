@@ -4,7 +4,8 @@
 const imageUploadModule = {
     currentFiles: [],
     uploadedImageUrls: [],
-    maxImages: 5,
+    minImages: 3,
+    maxImages: 3,
     // ImgBB API Key
     IMGBB_API_KEY: '2f094209f45de396a38bcc6407cb4d54',
 
@@ -50,7 +51,7 @@ const imageUploadModule = {
 
         // Check if adding these files would exceed the limit
         if (this.currentFiles.length + filesArray.length > this.maxImages) {
-            utils.showToast(`Máximo ${this.maxImages} imágenes permitidas`, 'error');
+            utils.showToast(`Debes seleccionar exactamente ${this.maxImages} imágenes`, 'error');
             return;
         }
 
@@ -109,7 +110,9 @@ const imageUploadModule = {
     updateCounter() {
         const counters = document.querySelectorAll('.image-counter');
         counters.forEach(counter => {
-            counter.textContent = `${this.currentFiles.length}/${this.maxImages} imágenes`;
+            const hasCorrectAmount = this.currentFiles.length === this.minImages;
+            counter.textContent = `${this.currentFiles.length}/${this.maxImages} imágenes ${hasCorrectAmount ? '✓' : ''}`;
+            counter.style.color = hasCorrectAmount ? 'var(--color-success)' : 'var(--color-warning)';
             counter.classList.toggle('hidden', this.currentFiles.length === 0);
         });
     },
@@ -215,9 +218,9 @@ const imageUploadModule = {
         const tabType = activeTab.dataset.tab;
 
         if (tabType === 'file') {
-            // Check minimum requirement
-            if (this.currentFiles.length === 0) {
-                utils.showToast('Debes seleccionar al menos 1 imagen', 'error');
+            // Check exact requirement
+            if (this.currentFiles.length !== this.minImages) {
+                utils.showToast(`Debes seleccionar exactamente ${this.minImages} imágenes`, 'error');
                 return null;
             }
 

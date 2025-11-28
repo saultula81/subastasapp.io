@@ -218,7 +218,8 @@ async function createAuction(auctionData) {
         const auction = {
             title: auctionData.title,
             description: auctionData.description,
-            imageUrl: auctionData.imageUrl,
+            imageUrls: auctionData.imageUrls || (auctionData.imageUrl ? [auctionData.imageUrl] : []),
+            imageUrl: auctionData.imageUrl || (auctionData.imageUrls ? auctionData.imageUrls[0] : ''), // Primary image
             startingPrice: parseFloat(auctionData.startingPrice),
             currentPrice: parseFloat(auctionData.startingPrice),
             endTime: endTime,
@@ -262,13 +263,27 @@ function setupAuctionListeners() {
     }
 
     // Create auction form
-    document.getElementById('form-create-auction').addEventListener('submit', (e) => {
+    document.getElementById('form-create-auction').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // Get image URLs
+        let imageUrls = [];
+        if (window.imageUploadModule) {
+            imageUrls = await window.imageUploadModule.getImageUrls('modal-create-auction');
+        } else {
+            const url = document.getElementById('auction-image').value;
+            if (url) imageUrls = [url];
+        }
+
+        if (!imageUrls || imageUrls.length === 0) {
+            return;
+        }
 
         const auctionData = {
             title: document.getElementById('auction-title').value,
             description: document.getElementById('auction-description').value,
-            imageUrl: document.getElementById('auction-image').value,
+            imageUrls: imageUrls,
+            imageUrl: imageUrls[0], // Primary image
             startingPrice: document.getElementById('auction-starting-price').value,
             duration: document.getElementById('auction-duration').value
         };
