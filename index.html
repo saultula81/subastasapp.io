@@ -203,15 +203,59 @@
                     <label for="auction-title">Título</label>
                     <input type="text" id="auction-title" required placeholder="Ej: iPhone 15 Pro Max">
                 </div>
-                <label for="auction-duration">Duración (horas)</label>
-                <input type="number" id="auction-duration" required min="1" max="168" value="24" placeholder="24">
+                <div class="form-group">
+                    <label for="auction-description">Descripción</label>
+                    <textarea id="auction-description" required placeholder="Describe el artículo..."
+                        rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="auction-image">Imágenes del Producto (3 fotos obligatorias)</label>
+                    <div class="image-upload-options">
+                        <div class="upload-tabs">
+                            <button type="button" class="upload-tab active" data-tab="file">
+                                📁 Subir Archivos
+                            </button>
+                            <button type="button" class="upload-tab" data-tab="url">
+                                🔗 URL
+                            </button>
+                        </div>
+
+                        <!-- File Upload Tab -->
+                        <div id="upload-file-tab-admin" class="upload-tab-content active">
+                            <input type="file" id="auction-image-file" accept="image/*" multiple class="file-input">
+                            <div class="image-counter hidden">0/3 imágenes</div>
+                            <div class="upload-preview-grid hidden"></div>
+                            <div class="upload-progress hidden">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                            <small>Debes seleccionar exactamente 3 imágenes. Máximo 32MB cada una.</small>
+                        </div>
+
+                        <!-- URL Tab -->
+                        <div id="upload-url-tab-admin" class="upload-tab-content">
+                            <input type="url" id="auction-image-url" placeholder="https://ejemplo.com/imagen.jpg">
+                            <small>O ingresa la URL de una imagen</small>
+                        </div>
+                        <input type="hidden" id="auction-image">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="auction-starting-price">Precio Inicial ($)</label>
+                    <input type="number" id="auction-starting-price" required min="1" step="1" placeholder="100">
+                </div>
+                <div class="form-group">
+                    <label for="auction-duration">Duración (horas)</label>
+                    <input type="number" id="auction-duration" required min="1" max="168" value="24" placeholder="24">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Subasta</button>
+                </div>
+            </form>
         </div>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Crear Subasta</button>
-        </div>
-        </form>
-    </div>
     </div>
 
     <!-- Modal: Place Bid -->
@@ -228,8 +272,8 @@
                     <input type="hidden" id="bid-auction-id">
                     <div class="form-group">
                         <label for="bid-amount">Tu Puja ($)</label>
-                        <input type="number" id="bid-amount" required min="1" step="0.01" placeholder="Ingresa tu puja">
-                        <small>Debe ser mayor a la puja actual</small>
+                        <input type="number" id="bid-amount" required min="1" step="1000" placeholder="Ingresa tu puja">
+                        <small>Debe ser al menos $1.000 mayor a la puja actual</small>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
@@ -258,11 +302,11 @@
                         rows="3"></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="request-image">Imagen del Artículo</label>
+                    <label for="request-image">Imágenes del Artículo (3 fotos obligatorias)</label>
                     <div class="image-upload-options">
                         <div class="upload-tabs">
                             <button type="button" class="upload-tab active" data-tab="file">
-                                📁 Subir Archivo
+                                📁 Subir Archivos
                             </button>
                             <button type="button" class="upload-tab" data-tab="url">
                                 🔗 URL
@@ -271,18 +315,16 @@
 
                         <!-- File Upload Tab -->
                         <div id="upload-file-tab" class="upload-tab-content active">
-                            <input type="file" id="request-image-file" accept="image/*" class="file-input">
-                            <div class="upload-preview hidden">
-                                <img class="preview-image" src="" alt="Preview">
-                                <button type="button" class="btn-remove-image">✕</button>
-                            </div>
+                            <input type="file" id="request-image-file" accept="image/*" multiple class="file-input">
+                            <div class="image-counter hidden">0/3 imágenes</div>
+                            <div class="upload-preview-grid hidden"></div>
                             <div class="upload-progress hidden">
                                 <div class="progress-bar">
                                     <div class="progress-fill"></div>
                                 </div>
                                 <span class="progress-text">0%</span>
                             </div>
-                            <small>Máximo 32MB. Gratis con ImgBB.</small>
+                            <small>Debes seleccionar exactamente 3 imágenes. Máximo 32MB cada una.</small>
                         </div>
 
                         <!-- URL Tab -->
@@ -290,13 +332,12 @@
                             <input type="url" id="request-image-url" placeholder="https://ejemplo.com/imagen.jpg">
                             <small>O ingresa la URL de una imagen</small>
                         </div>
-                        <!-- Hidden input to store final URL for form submission -->
                         <input type="hidden" id="request-image">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="request-price">Precio Inicial ($)</label>
-                    <input type="number" id="request-price" required min="1" step="0.01" placeholder="100">
+                    <input type="number" id="request-price" required min="1" step="1" placeholder="100">
                 </div>
                 <div class="form-group">
                     <label for="request-duration">Duración (horas)</label>
